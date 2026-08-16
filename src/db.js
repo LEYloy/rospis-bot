@@ -12,20 +12,21 @@ const DEFAULT_DATA = {
     priceTon: 5,
     active: true,
   },
-  // справочный прайс-лист "подарков" — 11 позиций, тремя ценовыми уровнями.
-  // Это ориентир для покупателя, из чего складывается цена — редактируется в админке.
+  // каталог подарков, которые выбирает сам покупатель — 11 позиций.
+  // photo — прямая ссылка на картинку (если пусто, показывается эмодзи-заглушка).
+  // ton — цена в TON для оплаты через CryptoBot / прямой перевод.
   giftTiers: [
-    { id: "heart", name: "Сердце", stars: 15 },
-    { id: "bear", name: "Мишка", stars: 15 },
-    { id: "rose", name: "Роза", stars: 25 },
-    { id: "gift", name: "Подарок", stars: 25 },
-    { id: "cake", name: "Торт", stars: 50 },
-    { id: "bouquet", name: "Букет", stars: 50 },
-    { id: "rocket", name: "Ракета", stars: 50 },
-    { id: "champagne", name: "Шампанское", stars: 50 },
-    { id: "cup", name: "Кубок", stars: 100 },
-    { id: "ring", name: "Кольцо", stars: 100 },
-    { id: "diamond", name: "Алмаз", stars: 100 },
+    { id: "heart", name: "Сердце", stars: 15, ton: 0.15, photo: null, emoji: "💝" },
+    { id: "bear", name: "Мишка", stars: 15, ton: 0.15, photo: null, emoji: "🧸" },
+    { id: "rose", name: "Роза", stars: 25, ton: 0.25, photo: null, emoji: "🌹" },
+    { id: "gift", name: "Подарок", stars: 25, ton: 0.25, photo: null, emoji: "🎁" },
+    { id: "cake", name: "Торт", stars: 50, ton: 0.5, photo: null, emoji: "🎂" },
+    { id: "bouquet", name: "Букет", stars: 50, ton: 0.5, photo: null, emoji: "💐" },
+    { id: "rocket", name: "Ракета", stars: 50, ton: 0.5, photo: null, emoji: "🚀" },
+    { id: "champagne", name: "Шампанское", stars: 50, ton: 0.5, photo: null, emoji: "🍾" },
+    { id: "cup", name: "Кубок", stars: 100, ton: 1, photo: null, emoji: "🏆" },
+    { id: "ring", name: "Кольцо", stars: 100, ton: 1, photo: null, emoji: "💍" },
+    { id: "diamond", name: "Алмаз", stars: 100, ton: 1, photo: null, emoji: "💎" },
   ],
   orders: [],
 };

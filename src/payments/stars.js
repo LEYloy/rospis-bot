@@ -10,9 +10,9 @@ async function createStarsInvoiceLink(bot, { title, description, amountStars, pa
     title,
     description,
     payload,
+    provider_token: "", // для Stars (XTR) Telegram требует именно пустую строку, а не отсутствие поля
     currency: "XTR",
     prices: [{ label: title, amount: amountStars }],
-    // provider_token не указываем — обязателен только для фиатных валют
   });
   return link;
 }

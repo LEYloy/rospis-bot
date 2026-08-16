@@ -130,7 +130,10 @@ html, body {
 
 .gift-row {
   display: grid;
-  grid-template-columns: 1fr 90px;
+  grid-template-columns: 1fr 84px 84px;
+  grid-template-areas:
+    "name stars ton"
+    "photo photo photo";
   gap: 8px;
   align-items: center;
   background: var(--surface);
@@ -138,6 +141,20 @@ html, body {
   padding: 8px 10px;
   margin-bottom: 8px;
 }
+
+.gift-row .f-name { grid-area: name; }
+.gift-row .f-stars { grid-area: stars; }
+.gift-row .f-ton { grid-area: ton; }
+.gift-row .f-photo {
+  grid-area: photo;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.gift-row .f-photo:focus { outline: none; color: var(--ink); }
 
 .gift-row input[type="text"] {
   background: transparent;

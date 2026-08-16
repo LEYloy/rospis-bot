@@ -71,11 +71,16 @@ function renderGifts(tiers) {
     const row = document.createElement("div");
     row.className = "gift-row";
     row.innerHTML = `
-      <input type="text" value="${g.name}" data-idx="${i}" data-field="name" />
-      <div class="stars-input">
+      <input type="text" class="f-name" value="${g.name}" data-idx="${i}" data-field="name" placeholder="Название" />
+      <div class="stars-input f-stars">
         <input type="number" min="1" value="${g.stars}" data-idx="${i}" data-field="stars" />
         <span>★</span>
       </div>
+      <div class="stars-input f-ton">
+        <input type="number" min="0" step="0.01" value="${g.ton ?? 0}" data-idx="${i}" data-field="ton" />
+        <span>TON</span>
+      </div>
+      <input type="text" class="f-photo" value="${g.photo || ""}" data-idx="${i}" data-field="photo" placeholder="Ссылка на картинку (необязательно)" />
     `;
     list.appendChild(row);
   });
@@ -95,7 +100,7 @@ el("saveGifts").addEventListener("click", async () => {
     const field = input.dataset.field;
     updated[idx] = {
       ...updated[idx],
-      [field]: field === "stars" ? Number(input.value) : input.value,
+      [field]: field === "stars" || field === "ton" ? Number(input.value) : input.value,
     };
   });
   setHint("giftsHint", "Сохраняем…");

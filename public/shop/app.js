@@ -23,6 +23,27 @@ async function api(path, body) {
   return json;
 }
 
+let selectedGift = null;
+
+function renderPayAmounts() {
+  if (selectedGift) {
+    el("starsAmount").textContent = `${selectedGift.stars} ★`;
+    el("cryptoAmount").textContent = `${selectedGift.ton} TON`;
+    el("tonAmount").textContent = `${selectedGift.ton} TON`;
+    el("payStack").hidden = false;
+  } else {
+    el("payStack").hidden = true;
+  }
+}
+
+function selectGift(gift, cardEl) {
+  selectedGift = gift;
+  document.querySelectorAll(".gift-card").forEach((c) => c.classList.remove("selected"));
+  cardEl.classList.add("selected");
+  setStatus("");
+  renderPayAmounts();
+}
+
 async function load() {
   try {
     const res = await fetch("/api/product");
@@ -30,25 +51,28 @@ async function load() {
 
     el("title").textContent = product.title;
     el("desc").textContent = product.description;
-    el("starsAmount").textContent = `${product.priceStars} ★`;
-    el("cryptoAmount").textContent = `${product.priceTon} TON`;
-    el("tonAmount").textContent = `${product.priceTon} TON`;
 
     if (!product.active) {
       setStatus("Сейчас продажи временно закрыты", "error");
       return;
     }
 
-    el("payStack").hidden = false;
-
     if (giftTiers && giftTiers.length) {
       const grid = el("giftsGrid");
       grid.innerHTML = "";
       giftTiers.forEach((g) => {
-        const chip = document.createElement("div");
-        chip.className = "gift-chip";
-        chip.innerHTML = `<span class="g-name">${g.name}</span><span class="g-price">${g.stars} ★</span>`;
-        grid.appendChild(chip);
+        const card = document.createElement("div");
+        card.className = "gift-card";
+        card.title = g.name;
+        const media = g.photo
+          ? `<img src="${g.photo}" alt="${g.name}" />`
+          : `<span class="g-emoji">${g.emoji || "🎁"}</span>`;
+        card.innerHTML = `
+          <div class="g-media">${media}</div>
+          <span class="g-price"><span class="g-price-icon">★</span>${g.stars}</span>
+        `;
+        card.addEventListener("click", () => selectGift(g, card));
+        grid.appendChild(card);
       });
       el("giftsCard").hidden = false;
     }
@@ -57,10 +81,19 @@ async function load() {
   }
 }
 
+function requireGiftSelected() {
+  if (!selectedGift) {
+    setStatus("Сначала выберите подарок", "error");
+    return false;
+  }
+  return true;
+}
+
 el("btnStars").addEventListener("click", async () => {
+  if (!requireGiftSelected()) return;
   setStatus("Готовим счёт…");
   try {
-    const { link } = await api("/api/pay/stars");
+    const { link } = await api("/api/pay/stars", { giftId: selectedGift.id });
     tg.openInvoice(link, (status) => {
       if (status === "paid") setStatus("Оплата прошла успешно ✅", "ok");
       else if (status === "cancelled") setStatus("Оплата отменена");
@@ -72,20 +105,26 @@ el("btnStars").addEventListener("click", async () => {
 });
 
 el("btnCrypto").addEventListener("click", async () => {
+  if (!requireGiftSelected()) return;
   setStatus("Создаём счёт в CryptoBot…");
   try {
-    const { payUrl } = await api("/api/pay/cryptobot", { asset: "TON" });
-    tg.openLink(payUrl);
-    setStatus("Завершите оплату в открывшемся окне CryptoBot");
+    const { payUrl } = await api("/api/pay/cryptobot", { asset: "TON", giftId: selectedGift.id });
+    if (payUrl.startsWith("https://t.me/")) {
+      tg.openTelegramLink(payUrl); // t.me-ссылка — переключает прямо на CryptoBot внутри Telegram, без браузера
+    } else {
+      tg.openLink(payUrl);
+    }
+    setStatus("Завершите оплату в CryptoBot");
   } catch (e) {
     setStatus("Ошибка: " + e.message, "error");
   }
 });
 
 el("btnTon").addEventListener("click", async () => {
+  if (!requireGiftSelected()) return;
   setStatus("Готовим перевод…");
   try {
-    const { link } = await api("/api/pay/ton");
+    const { link } = await api("/api/pay/ton", { giftId: selectedGift.id });
     tg.openLink(link);
     setStatus("Подтвердите перевод в кошельке. Статус проверит продавец после получения.");
   } catch (e) {

@@ -55,6 +55,12 @@ app.get("/api/product", (req, res) => {
   res.json({ product: data.product, giftTiers: data.giftTiers });
 });
 
+// находит выбранный подарок по id, либо возвращает null
+function findGift(data, giftId) {
+  if (!giftId) return null;
+  return data.giftTiers.find((g) => g.id === giftId) || null;
+}
+
 app.post("/api/pay/stars", async (req, res) => {
   try {
     const user = requireUser(req, res);
@@ -62,11 +68,15 @@ app.post("/api/pay/stars", async (req, res) => {
     const data = db.read();
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
+    const gift = findGift(data, req.body.giftId);
+    const title = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
+    const amountStars = gift ? gift.stars : data.product.priceStars;
+
     const payload = generatePayload("stars");
     const link = await createStarsInvoiceLink(bot, {
-      title: data.product.title,
+      title,
       description: data.product.description,
-      amountStars: data.product.priceStars,
+      amountStars,
       payload,
     });
 
@@ -74,7 +84,9 @@ app.post("/api/pay/stars", async (req, res) => {
       userId: user.id,
       username: user.username || null,
       method: "stars",
-      amount: data.product.priceStars,
+      amount: amountStars,
+      giftId: gift ? gift.id : null,
+      giftName: gift ? gift.name : null,
       payload,
     });
 
@@ -93,11 +105,15 @@ app.post("/api/pay/cryptobot", async (req, res) => {
     const data = db.read();
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
+    const gift = findGift(data, req.body.giftId);
+    const description = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
+    const amountTon = gift ? gift.ton : data.product.priceTon;
+
     const payload = generatePayload("cb");
     const invoice = await createCryptoBotInvoice({
       asset: asset || "TON",
-      amount: data.product.priceTon,
-      description: data.product.title,
+      amount: amountTon,
+      description,
       payload,
     });
 
@@ -105,7 +121,9 @@ app.post("/api/pay/cryptobot", async (req, res) => {
       userId: user.id,
       username: user.username || null,
       method: "cryptobot",
-      amount: data.product.priceTon,
+      amount: amountTon,
+      giftId: gift ? gift.id : null,
+      giftName: gift ? gift.name : null,
       payload,
       cryptobotInvoiceId: invoice.invoice_id,
     });
@@ -126,14 +144,19 @@ app.post("/api/pay/ton", async (req, res) => {
     const address = process.env.TON_WALLET_ADDRESS;
     if (!address) return res.status(500).json({ error: "TON_WALLET_ADDRESS не настроен" });
 
+    const gift = findGift(data, req.body.giftId);
+    const amountTon = gift ? gift.ton : data.product.priceTon;
+
     const payload = generatePayload("ton");
-    const link = buildTonTransferLink({ address, amountTon: data.product.priceTon, comment: payload });
+    const link = buildTonTransferLink({ address, amountTon, comment: payload });
 
     const order = db.addOrder({
       userId: user.id,
       username: user.username || null,
       method: "ton",
-      amount: data.product.priceTon,
+      amount: amountTon,
+      giftId: gift ? gift.id : null,
+      giftName: gift ? gift.name : null,
       payload,
     });
 
