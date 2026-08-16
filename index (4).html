@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Роспись</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="page">
+    <div class="eyebrow" id="eyebrow">Персональная роспись</div>
+
+    <div class="seal">
+      <svg id="signatureSvg" viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path id="signaturePath"
+          d="M14 62 C 24 30, 40 20, 50 45 C 58 65, 64 70, 72 50 C 80 30, 88 24, 96 46
+             C 102 62, 112 66, 122 44 C 132 22, 144 20, 152 42 C 158 58, 168 44, 176 30
+             C 182 20, 196 18, 204 34"
+          stroke="url(#goldGrad)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+        <defs>
+          <linearGradient id="goldGrad" x1="0" y1="0" x2="220" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#8f7433"/>
+            <stop offset="0.5" stop-color="#e7c877"/>
+            <stop offset="1" stop-color="#8f7433"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <h1 class="title" id="title">Роспись</h1>
+    <p class="desc" id="desc">Загрузка…</p>
+
+    <div class="price-row" id="priceRow"></div>
+
+    <div class="card gifts-card" id="giftsCard" hidden>
+      <div class="gifts-head">Выберите подарок</div>
+      <div class="gifts-grid" id="giftsGrid"></div>
+    </div>
+
+    <div class="pay-stack" id="payStack" hidden>
+      <button class="pay-btn pay-stars" id="btnStars">
+        <span class="pay-btn-label">Оплатить Stars</span>
+        <span class="pay-btn-sub" id="starsAmount">— ★</span>
+      </button>
+      <button class="pay-btn pay-crypto" id="btnCrypto">
+        <span class="pay-btn-label">Оплатить в CryptoBot</span>
+        <span class="pay-btn-sub" id="cryptoAmount">— TON</span>
+      </button>
+      <button class="pay-btn pay-ton" id="btnTon">
+        <span class="pay-btn-label">Перевести TON напрямую</span>
+        <span class="pay-btn-sub" id="tonAmount">— TON</span>
+      </button>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

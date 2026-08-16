@@ -1,0 +1,225 @@
+:root {
+  --bg: #0b0b0e;
+  --surface: #17151a;
+  --surface-2: #1f1c22;
+  --ink: #f2ede4;
+  --muted: #8a8578;
+  --gold: #c6a15b;
+  --gold-bright: #e7c877;
+  --danger: #c2694f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope", -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(198,161,91,0.10), transparent 60%),
+    var(--bg);
+}
+
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 18px;
+}
+
+.seal {
+  width: 100%;
+  max-width: 260px;
+  margin-bottom: 6px;
+}
+
+.seal svg { width: 100%; height: auto; display: block; }
+
+#signaturePath {
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  animation: draw 1.6s cubic-bezier(.65,0,.35,1) 0.15s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #signaturePath { animation: none; stroke-dashoffset: 0; }
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.title {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 6px 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.desc {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0 0 22px;
+  max-width: 360px;
+}
+
+.price-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid rgba(198,161,91,0.14);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.gifts-card { margin-bottom: 22px; }
+
+.gifts-head {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.gifts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.gift-card {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 14px 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.gift-card:active { transform: scale(0.96); }
+
+.gift-card.selected {
+  border-color: var(--gold);
+  background: rgba(198,161,91,0.14);
+}
+
+.g-media {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+}
+
+.g-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gift-card .g-price {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.g-price-icon {
+  font-size: 11px;
+  color: var(--gold-bright);
+}
+
+.pay-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pay-btn {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.pay-btn:active { transform: scale(0.98); }
+
+.pay-stars {
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #1a1509;
+}
+
+.pay-crypto {
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid rgba(198,161,91,0.25);
+}
+
+.pay-ton {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(242,237,228,0.16);
+}
+
+.pay-btn-sub {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+.status {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 18px;
+}
+
+.status.error { color: var(--danger); }
+.status.ok { color: var(--gold-bright); }
