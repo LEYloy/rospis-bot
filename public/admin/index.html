@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Админка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="page" id="page" hidden>
+    <div class="eyebrow">Панель продавца</div>
+    <h1 class="title">Управление росписью</h1>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="product">Товар</button>
+      <button class="tab" data-tab="gifts">Прайс подарков</button>
+      <button class="tab" data-tab="orders">Заказы</button>
+    </div>
+
+    <section class="tab-panel" id="panel-product">
+      <label class="field">
+        <span>Название</span>
+        <input id="fTitle" type="text" />
+      </label>
+      <label class="field">
+        <span>Описание</span>
+        <textarea id="fDesc" rows="3"></textarea>
+      </label>
+      <label class="field">
+        <span>Цена, Stars ★</span>
+        <input id="fStars" type="number" min="1" />
+      </label>
+      <label class="field">
+        <span>Цена, TON</span>
+        <input id="fTon" type="number" min="0" step="0.01" />
+      </label>
+      <label class="field switch-field">
+        <span>Продажи открыты</span>
+        <input id="fActive" type="checkbox" />
+      </label>
+      <button class="save-btn" id="saveProduct">Сохранить товар</button>
+      <div class="hint" id="productHint"></div>
+    </section>
+
+    <section class="tab-panel hidden" id="panel-gifts">
+      <div class="hint" style="margin-bottom:12px">Справочный прайс из 11 позиций — показывается покупателю как ориентир, из чего складывается цена.</div>
+      <div id="giftsList"></div>
+      <button class="save-btn" id="saveGifts">Сохранить прайс</button>
+      <div class="hint" id="giftsHint"></div>
+    </section>
+
+    <section class="tab-panel hidden" id="panel-orders">
+      <div id="ordersList" class="orders-list"></div>
+    </section>
+  </div>
+
+  <div class="denied" id="denied" hidden>
+    <div class="denied-title">Доступ только для администратора</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+:root {
+  --bg: #0b0b0e;
+  --surface: #17151a;
+  --surface-2: #1f1c22;
+  --ink: #f2ede4;
+  --muted: #8a8578;
+  --gold: #c6a15b;
+  --gold-bright: #e7c877;
+  --danger: #c2694f;
+  --ok: #7fae7a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope", -apple-system, sans-serif;
+}
+
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 18px 40px;
+}
+
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.title {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 24px;
+  margin: 0 0 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 9px 6px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--surface-2);
+  color: var(--gold-bright);
+}
+
+.tab-panel.hidden { display: none; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field textarea {
+  font-family: "Manrope", sans-serif;
+  background: var(--surface);
+  border: 1px solid rgba(198,161,91,0.18);
+  border-radius: 10px;
+  padding: 11px 12px;
+  color: var(--ink);
+  font-size: 14.5px;
+  resize: vertical;
+}
+
+.field input:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.switch-field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-field input { width: 20px; height: 20px; }
+
+.save-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #1a1509;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.save-btn:active { transform: scale(0.98); }
+
+.hint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+  min-height: 16px;
+}
+.hint.ok { color: var(--ok); }
+.hint.error { color: var(--danger); }
+
+.gift-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.gift-row input[type="text"] {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 13.5px;
+  padding: 4px 0;
+}
+.gift-row input[type="text"]:focus { outline: none; }
+
+.gift-row .stars-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.gift-row .stars-input input[type="number"] {
+  background: transparent;
+  border: none;
+  color: var(--gold-bright);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  width: 100%;
+}
+.gift-row .stars-input input[type="number"]:focus { outline: none; }
+
+.orders-list { display: flex; flex-direction: column; gap: 8px; }
+
+.order-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.order-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+.order-status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.order-status.pending { background: rgba(198,161,91,0.16); color: var(--gold-bright); }
+.order-status.paid { background: rgba(127,174,122,0.16); color: var(--ok); }
+
+.order-meta { color: var(--muted); font-size: 12.5px; }
+
+.denied {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.denied-title {
+  font-family: "Fraunces", serif;
+  font-size: 18px;
+  color: var(--muted);
+}
