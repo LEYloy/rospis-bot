@@ -16,17 +16,17 @@ const DEFAULT_DATA = {
   // photo — прямая ссылка на картинку (если пусто, показывается эмодзи-заглушка).
   // ton — цена в TON для оплаты через CryptoBot / прямой перевод.
   giftTiers: [
-    { id: "heart", name: "Сердце", stars: 15, ton: 0.15, photo: null, emoji: "💝" },
-    { id: "bear", name: "Мишка", stars: 15, ton: 0.15, photo: null, emoji: "🧸" },
-    { id: "rose", name: "Роза", stars: 25, ton: 0.25, photo: null, emoji: "🌹" },
-    { id: "gift", name: "Подарок", stars: 25, ton: 0.25, photo: null, emoji: "🎁" },
-    { id: "cake", name: "Торт", stars: 50, ton: 0.5, photo: null, emoji: "🎂" },
-    { id: "bouquet", name: "Букет", stars: 50, ton: 0.5, photo: null, emoji: "💐" },
-    { id: "rocket", name: "Ракета", stars: 50, ton: 0.5, photo: null, emoji: "🚀" },
-    { id: "champagne", name: "Шампанское", stars: 50, ton: 0.5, photo: null, emoji: "🍾" },
-    { id: "cup", name: "Кубок", stars: 100, ton: 1, photo: null, emoji: "🏆" },
-    { id: "ring", name: "Кольцо", stars: 100, ton: 1, photo: null, emoji: "💍" },
-    { id: "diamond", name: "Алмаз", stars: 100, ton: 1, photo: null, emoji: "💎" },
+    { id: "heart", name: "Сердце", stars: 15, ton: 0.15, photo: "https://api.changes.tg/original/5170145012310081615.png", emoji: "💝" },
+    { id: "bear", name: "Мишка", stars: 15, ton: 0.15, photo: "https://api.changes.tg/original/5170233102089322756.png", emoji: "🧸" },
+    { id: "rose", name: "Роза", stars: 25, ton: 0.25, photo: "https://api.changes.tg/original/5168103777563050263.png", emoji: "🌹" },
+    { id: "gift", name: "Подарок", stars: 25, ton: 0.25, photo: "https://api.changes.tg/original/5170250947678437525.png", emoji: "🎁" },
+    { id: "cake", name: "Торт", stars: 50, ton: 0.5, photo: "https://api.changes.tg/original/5170144170496491616.png", emoji: "🎂" },
+    { id: "bouquet", name: "Букет", stars: 50, ton: 0.5, photo: "https://api.changes.tg/original/5170314324215857265.png", emoji: "💐" },
+    { id: "rocket", name: "Ракета", stars: 50, ton: 0.5, photo: "https://api.changes.tg/original/5170564780938756245.png", emoji: "🚀" },
+    { id: "champagne", name: "Шампанское", stars: 50, ton: 0.5, photo: "https://api.changes.tg/original/6028601630662853006.png", emoji: "🍾" },
+    { id: "cup", name: "Кубок", stars: 100, ton: 1, photo: "https://cdn.changes.tg/gifts/originals/5168043875654172773/Original.png", emoji: "🏆" },
+    { id: "ring", name: "Кольцо", stars: 100, ton: 1, photo: "https://api.changes.tg/original/5170690322832818290.png", emoji: "💍" },
+    { id: "diamond", name: "Алмаз", stars: 100, ton: 1, photo: "https://api.changes.tg/original/5170521118301225164.png", emoji: "💎" },
   ],
   orders: [],
 };
@@ -41,7 +41,27 @@ function ensureFile() {
 
 function read() {
   ensureFile();
-  return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
+  const data = JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
+  return migrate(data);
+}
+
+// Дозаполняет уже сохранённые giftTiers недостающими полями (photo/ton/emoji),
+// если файл data/db.json был создан более старой версией кода. Не трогает
+// значения, уже выставленные вручную в админке (например изменённую цену).
+function migrate(data) {
+  if (!Array.isArray(data.giftTiers)) return data;
+  let changed = false;
+  data.giftTiers = data.giftTiers.map((g) => {
+    const base = DEFAULT_DATA.giftTiers.find((d) => d.id === g.id);
+    if (!base) return g;
+    const merged = { ...g };
+    if (merged.ton === undefined) { merged.ton = base.ton; changed = true; }
+    if (!merged.photo) { merged.photo = base.photo; changed = true; }
+    if (!merged.emoji) { merged.emoji = base.emoji; changed = true; }
+    return merged;
+  });
+  if (changed) write(data);
+  return data;
 }
 
 function write(data) {

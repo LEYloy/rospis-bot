@@ -25,24 +25,63 @@ async function api(path, body) {
 
 let selectedGift = null;
 
-function renderPayAmounts() {
-  if (selectedGift) {
-    el("starsAmount").textContent = `${selectedGift.stars} ★`;
-    el("cryptoAmount").textContent = `${selectedGift.ton} TON`;
-    el("tonAmount").textContent = `${selectedGift.ton} TON`;
-    el("payStack").hidden = false;
-  } else {
-    el("payStack").hidden = true;
-  }
+// --- шторка (bottom sheet) ---
+
+function openSheet() {
+  el("sheetOverlay").hidden = false;
+  requestAnimationFrame(() => el("sheetOverlay").classList.add("open"));
+  showDetailScreen();
 }
 
-function selectGift(gift, cardEl) {
-  selectedGift = gift;
-  document.querySelectorAll(".gift-card").forEach((c) => c.classList.remove("selected"));
-  cardEl.classList.add("selected");
+function closeSheet() {
+  el("sheetOverlay").classList.remove("open");
+  setTimeout(() => {
+    el("sheetOverlay").hidden = true;
+  }, 220);
+  selectedGift = null;
   setStatus("");
-  renderPayAmounts();
 }
+
+function showDetailScreen() {
+  el("screenDetail").classList.remove("hidden");
+  el("screenPay").classList.add("hidden");
+}
+
+function showPayScreen() {
+  el("screenDetail").classList.add("hidden");
+  el("screenPay").classList.remove("hidden");
+  el("starsAmount").textContent = `${selectedGift.stars} ★`;
+  el("cryptoAmount").textContent = `${selectedGift.ton} TON`;
+  el("tonAmount").textContent = `${selectedGift.ton} TON`;
+  el("paySummary").textContent = `${selectedGift.stars} ★ · ${selectedGift.name}`;
+  setStatus("");
+}
+
+function selectGift(gift) {
+  selectedGift = gift;
+  el("sheetName").textContent = gift.name;
+  el("sheetPrice").textContent = `${gift.stars} ★`;
+  const img = el("sheetImg");
+  const emoji = el("sheetEmoji");
+  if (gift.photo) {
+    img.src = gift.photo;
+    img.hidden = false;
+    emoji.hidden = true;
+  } else {
+    img.hidden = true;
+    emoji.textContent = gift.emoji || "🎁";
+    emoji.hidden = false;
+  }
+  openSheet();
+}
+
+el("sheetOverlay").addEventListener("click", (e) => {
+  if (e.target === el("sheetOverlay")) closeSheet();
+});
+el("btnOpenPay").addEventListener("click", showPayScreen);
+el("btnBack").addEventListener("click", showDetailScreen);
+
+// --- загрузка каталога ---
 
 async function load() {
   try {
@@ -71,7 +110,7 @@ async function load() {
           <div class="g-media">${media}</div>
           <span class="g-price"><span class="g-price-icon">★</span>${g.stars}</span>
         `;
-        card.addEventListener("click", () => selectGift(g, card));
+        card.addEventListener("click", () => selectGift(g));
         grid.appendChild(card);
       });
       el("giftsCard").hidden = false;
@@ -81,22 +120,18 @@ async function load() {
   }
 }
 
-function requireGiftSelected() {
-  if (!selectedGift) {
-    setStatus("Сначала выберите подарок", "error");
-    return false;
-  }
-  return true;
-}
+// --- оплата ---
 
 el("btnStars").addEventListener("click", async () => {
-  if (!requireGiftSelected()) return;
+  if (!selectedGift) return;
   setStatus("Готовим счёт…");
   try {
     const { link } = await api("/api/pay/stars", { giftId: selectedGift.id });
     tg.openInvoice(link, (status) => {
-      if (status === "paid") setStatus("Оплата прошла успешно ✅", "ok");
-      else if (status === "cancelled") setStatus("Оплата отменена");
+      if (status === "paid") {
+        setStatus("Оплата прошла успешно ✅", "ok");
+        setTimeout(closeSheet, 1200);
+      } else if (status === "cancelled") setStatus("Оплата отменена");
       else if (status === "failed") setStatus("Оплата не прошла", "error");
     });
   } catch (e) {
@@ -105,12 +140,12 @@ el("btnStars").addEventListener("click", async () => {
 });
 
 el("btnCrypto").addEventListener("click", async () => {
-  if (!requireGiftSelected()) return;
+  if (!selectedGift) return;
   setStatus("Создаём счёт в CryptoBot…");
   try {
     const { payUrl } = await api("/api/pay/cryptobot", { asset: "TON", giftId: selectedGift.id });
     if (payUrl.startsWith("https://t.me/")) {
-      tg.openTelegramLink(payUrl); // t.me-ссылка — переключает прямо на CryptoBot внутри Telegram, без браузера
+      tg.openTelegramLink(payUrl);
     } else {
       tg.openLink(payUrl);
     }
@@ -121,7 +156,7 @@ el("btnCrypto").addEventListener("click", async () => {
 });
 
 el("btnTon").addEventListener("click", async () => {
-  if (!requireGiftSelected()) return;
+  if (!selectedGift) return;
   setStatus("Готовим перевод…");
   try {
     const { link } = await api("/api/pay/ton", { giftId: selectedGift.id });
