@@ -5,8 +5,8 @@ const DB_PATH = path.join(__dirname, "..", "data", "db.json");
 
 const DEFAULT_DATA = {
   product: {
-    title: "Роспись",
-    description: "Персональная роспись, записанная лично для вас.",
+    title: "MediaSigned",
+    description: "Роспись от медиек прямо в мини-приложении Telegram!",
     photo: null,
     priceStars: 500,
     priceTon: 5,
@@ -29,6 +29,7 @@ const DEFAULT_DATA = {
     { id: "diamond", name: "Алмаз", stars: 100, ton: 1, photo: "https://api.changes.tg/original/5170521118301225164.png", emoji: "💎" },
   ],
   orders: [],
+  applications: [],
 };
 
 function ensureFile() {
@@ -110,6 +111,36 @@ function findOrderByPayload(payload) {
   return data.orders.find((o) => o.payload === payload) || null;
 }
 
+// --- заявки медийщиков на подключение (/signed) ---
+
+function addApplication(app) {
+  const data = read();
+  if (!Array.isArray(data.applications)) data.applications = [];
+  const record = {
+    id: data.applications.length + 1,
+    createdAt: new Date().toISOString(),
+    status: "pending",
+    ...app,
+  };
+  data.applications.push(record);
+  write(data);
+  return record;
+}
+
+function updateApplication(id, patch) {
+  const data = read();
+  const idx = (data.applications || []).findIndex((a) => a.id === id);
+  if (idx === -1) return null;
+  data.applications[idx] = { ...data.applications[idx], ...patch };
+  write(data);
+  return data.applications[idx];
+}
+
+function findApplication(id) {
+  const data = read();
+  return (data.applications || []).find((a) => a.id === id) || null;
+}
+
 module.exports = {
   read,
   write,
@@ -118,4 +149,7 @@ module.exports = {
   addOrder,
   updateOrder,
   findOrderByPayload,
+  addApplication,
+  updateApplication,
+  findApplication,
 };

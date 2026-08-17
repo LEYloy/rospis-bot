@@ -53,6 +53,109 @@ bot.command("admin", async (ctx) => {
   await ctx.reply("Админ-панель:", { reply_markup: kb });
 });
 
+// --- Заявки медийщиков: /signed ---
+// Простой пошаговый опрос в личных сообщениях (без плагина conversations,
+// состояние держим в памяти процесса — этого достаточно для одного инстанса).
+
+const signedFlow = new Map(); // userId -> { step, name, link, reason }
+
+function isSignedStep(userId) {
+  return signedFlow.has(userId);
+}
+
+bot.command("signed", async (ctx) => {
+  if (ctx.chat.type !== "private") return;
+  signedFlow.set(ctx.from.id, { step: "name" });
+  await ctx.reply(
+    "Заявка на подключение к MediaSigned 🖋\n\nКак вас подписывать в росписях? Напишите имя или псевдоним, под которым вы работаете."
+  );
+});
+
+bot.on("message:text", async (ctx, next) => {
+  const state = signedFlow.get(ctx.from.id);
+  if (!state) return next();
+
+  const text = ctx.message.text.trim();
+
+  if (state.step === "name") {
+    state.name = text;
+    state.step = "link";
+    return ctx.reply("Ссылка на ваш канал/соцсеть, где вас можно проверить:");
+  }
+
+  if (state.step === "link") {
+    state.link = text;
+    state.step = "reason";
+    return ctx.reply("Коротко: почему хотите продавать роспись от себя?");
+  }
+
+  if (state.step === "reason") {
+    state.reason = text;
+    signedFlow.delete(ctx.from.id);
+
+    const application = db.addApplication({
+      userId: ctx.from.id,
+      username: ctx.from.username || null,
+      name: state.name,
+      link: state.link,
+      reason: state.reason,
+    });
+
+    await ctx.reply("Заявка отправлена ✅ Мы свяжемся с вами после рассмотрения.");
+
+    const kb = new InlineKeyboard()
+      .text("✅ Принять", `app_accept_${application.id}`)
+      .text("❌ Отклонить", `app_decline_${application.id}`);
+
+    await ctx.api.sendMessage(
+      ADMIN_ID,
+      `🆕 Заявка на MediaSigned #${application.id}\n\n` +
+        `Имя: ${application.name}\n` +
+        `Ссылка: ${application.link}\n` +
+        `От: @${application.username || application.userId}\n\n` +
+        `Причина: ${application.reason}`,
+      { reply_markup: kb }
+    );
+    return;
+  }
+});
+
+bot.on("callback_query:data", async (ctx, next) => {
+  const data = ctx.callbackQuery.data;
+  const match = data.match(/^app_(accept|decline)_(\d+)$/);
+  if (!match) return next();
+
+  if (ctx.from.id !== ADMIN_ID) {
+    return ctx.answerCallbackQuery({ text: "Только для администратора" });
+  }
+
+  const [, action, idStr] = match;
+  const id = Number(idStr);
+  const application = db.findApplication(id);
+  if (!application) return ctx.answerCallbackQuery({ text: "Заявка не найдена" });
+  if (application.status !== "pending") {
+    return ctx.answerCallbackQuery({ text: "Уже обработана" });
+  }
+
+  const status = action === "accept" ? "accepted" : "declined";
+  db.updateApplication(id, { status });
+
+  await ctx.editMessageText(
+    ctx.callbackQuery.message.text + `\n\n${status === "accepted" ? "✅ Принята" : "❌ Отклонена"}`
+  );
+  await ctx.answerCallbackQuery();
+
+  const notifyText =
+    status === "accepted"
+      ? "Ваша заявка на MediaSigned принята ✅ Мы свяжемся с вами, чтобы настроить продажу росписи от вашего имени."
+      : "К сожалению, ваша заявка на MediaSigned отклонена.";
+  try {
+    await ctx.api.sendMessage(application.userId, notifyText);
+  } catch (e) {
+    console.error("не удалось уведомить заявителя:", e.message);
+  }
+});
+
 // --- Оплата Telegram Stars ---
 
 bot.on("pre_checkout_query", async (ctx) => {
