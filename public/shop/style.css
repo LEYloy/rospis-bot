@@ -53,6 +53,15 @@ body {
 
 .seal svg { width: 100%; height: auto; display: block; }
 
+.logo-img {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px;
+}
+
 #signaturePath {
   stroke-dasharray: 620;
   stroke-dashoffset: 620;
