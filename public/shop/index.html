@@ -23,11 +23,6 @@
 
     <div class="price-row" id="priceRow"></div>
 
-    <div class="card gifts-card" id="giftsCard" hidden>
-      <div class="gifts-head">Выберите подарок</div>
-      <div class="gifts-grid" id="giftsGrid"></div>
-    </div>
-
     <div class="card creators-card" id="creatorsCard" hidden>
       <div class="gifts-head">Медийки</div>
       <div class="creators-list" id="creatorsList"></div>
@@ -40,10 +35,24 @@
     <div class="sheet" id="sheet">
       <div class="sheet-handle"></div>
 
-      <div class="sheet-screen" id="screenDetail">
+      <div class="sheet-screen" id="screenGifts">
+        <div class="sheet-creator-head">
+          <div class="sheet-creator-avatar" id="sheetCreatorAvatar"></div>
+          <div>
+            <div class="sheet-creator-name" id="sheetCreatorName">—</div>
+            <div class="sheet-creator-desc" id="sheetCreatorDesc">—</div>
+          </div>
+        </div>
+        <div class="gifts-head">Выберите подарок</div>
+        <div class="gifts-grid" id="giftsGrid"></div>
+      </div>
+
+      <div class="sheet-screen hidden" id="screenDetail">
+        <button class="sheet-back" id="btnBackToGifts">← Назад</button>
         <div class="sheet-media"><img id="sheetImg" alt="" /><span id="sheetEmoji" class="sheet-emoji" hidden></span></div>
         <div class="sheet-title" id="sheetName">—</div>
         <button class="buy-btn" id="btnOpenPay">Купить · <span id="sheetPrice">—</span></button>
+        <div class="sheet-status" id="sheetStatus"></div>
       </div>
 
       <div class="sheet-screen hidden" id="screenPay">
@@ -64,6 +73,7 @@
             <span class="pay-btn-sub" id="tonAmount">— TON</span>
           </button>
         </div>
+        <div class="sheet-status" id="sheetStatus2"></div>
       </div>
     </div>
   </div>

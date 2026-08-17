@@ -122,6 +122,11 @@ function findGift(data, giftId) {
   return data.giftTiers.find((g) => g.id === giftId) || null;
 }
 
+function findCreator(giftId, creatorId) {
+  if (!creatorId) return null;
+  return db.findCreatorById(Number(creatorId));
+}
+
 app.post("/api/pay/stars", async (req, res) => {
   try {
     const user = requireUser(req, res);
@@ -130,6 +135,7 @@ app.post("/api/pay/stars", async (req, res) => {
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
     const gift = findGift(data, req.body.giftId);
+    const creator = findCreator(req.body.giftId, req.body.creatorId);
     const title = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
     const amountStars = gift ? gift.stars : data.product.priceStars;
 
@@ -148,13 +154,14 @@ app.post("/api/pay/stars", async (req, res) => {
       amount: amountStars,
       giftId: gift ? gift.id : null,
       giftName: gift ? gift.name : null,
+      creatorId: creator ? creator.id : null,
       payload,
     });
 
     res.json({ link });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "internal error" });
+    res.status(500).json({ error: "internal error", detail: String(e.message || e) });
   }
 });
 
@@ -167,6 +174,7 @@ app.post("/api/pay/cryptobot", async (req, res) => {
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
     const gift = findGift(data, req.body.giftId);
+    const creator = findCreator(req.body.giftId, req.body.creatorId);
     const description = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
     const amountTon = gift ? gift.ton : data.product.priceTon;
 
@@ -185,6 +193,7 @@ app.post("/api/pay/cryptobot", async (req, res) => {
       amount: amountTon,
       giftId: gift ? gift.id : null,
       giftName: gift ? gift.name : null,
+      creatorId: creator ? creator.id : null,
       payload,
       cryptobotInvoiceId: invoice.invoice_id,
     });
@@ -206,6 +215,7 @@ app.post("/api/pay/ton", async (req, res) => {
     if (!address) return res.status(500).json({ error: "TON_WALLET_ADDRESS не настроен" });
 
     const gift = findGift(data, req.body.giftId);
+    const creator = findCreator(req.body.giftId, req.body.creatorId);
     const amountTon = gift ? gift.ton : data.product.priceTon;
 
     const payload = generatePayload("ton");
@@ -218,6 +228,7 @@ app.post("/api/pay/ton", async (req, res) => {
       amount: amountTon,
       giftId: gift ? gift.id : null,
       giftName: gift ? gift.name : null,
+      creatorId: creator ? creator.id : null,
       payload,
     });
 
@@ -244,6 +255,7 @@ app.post("/api/pay/ton/check", async (req, res) => {
 
     if (tx) {
       db.updateOrder(order.id, { status: "paid" });
+      if (order.creatorId) db.incrementCreatorOrders(order.creatorId);
       return res.json({ paid: true });
     }
     res.json({ paid: false });
@@ -266,6 +278,7 @@ app.post("/webhooks/cryptobot", async (req, res) => {
     const order = db.findOrderByPayload(payload);
     if (order) {
       db.updateOrder(order.id, { status: "paid" });
+      if (order.creatorId) db.incrementCreatorOrders(order.creatorId);
       try {
         await bot.api.sendMessage(order.userId, "Оплата получена ✅ Спасибо! Роспись будет отправлена вам в ближайшее время.");
         await bot.api.sendMessage(

@@ -186,6 +186,15 @@ function listActiveCreators() {
   return (data.creators || []).filter((c) => c.active);
 }
 
+function incrementCreatorOrders(id) {
+  const data = read();
+  const idx = (data.creators || []).findIndex((c) => c.id === id);
+  if (idx === -1) return null;
+  data.creators[idx].ordersCount = (data.creators[idx].ordersCount || 0) + 1;
+  write(data);
+  return data.creators[idx];
+}
+
 module.exports = {
   read,
   write,
@@ -202,4 +211,5 @@ module.exports = {
   findCreatorById,
   findCreatorByUserId,
   listActiveCreators,
+  incrementCreatorOrders,
 };

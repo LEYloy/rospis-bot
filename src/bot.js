@@ -207,6 +207,7 @@ bot.on("message:successful_payment", async (ctx) => {
       status: "paid",
       telegramChargeId: payment.telegram_payment_charge_id,
     });
+    if (order.creatorId) db.incrementCreatorOrders(order.creatorId);
   }
   await ctx.reply("Оплата получена ✅ Спасибо! Роспись будет отправлена вам в ближайшее время.");
   await ctx.api.sendMessage(
