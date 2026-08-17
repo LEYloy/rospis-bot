@@ -28,7 +28,7 @@ async function api(path, body) {
     body: JSON.stringify({ initData, ...(body || {}) }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error || json.detail || "request failed");
+  if (!res.ok) throw new Error(json.detail || json.error || "request failed");
   return json;
 }
 
