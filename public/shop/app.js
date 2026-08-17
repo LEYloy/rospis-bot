@@ -83,6 +83,47 @@ el("btnBack").addEventListener("click", showDetailScreen);
 
 // --- загрузка каталога ---
 
+async function loadCreators() {
+  try {
+    const res = await fetch("/api/creators");
+    const { creators } = await res.json();
+    if (!creators || !creators.length) return;
+
+    const list = el("creatorsList");
+    list.innerHTML = "";
+    creators.forEach((c) => {
+      const row = document.createElement("div");
+      row.className = "creator-row";
+      const initial = (c.name || c.username || "?").trim().charAt(0).toUpperCase();
+      row.innerHTML = `
+        <div class="creator-avatar" style="background-image:url('${c.avatarUrl}')">
+          <span class="creator-avatar-fallback">${initial}</span>
+        </div>
+        <div class="creator-meta">
+          <div class="creator-name">${c.name}${c.username ? ` <span class="creator-username">@${c.username}</span>` : ""}</div>
+          <div class="creator-desc">${c.description}</div>
+        </div>
+        <div class="creator-side">
+          <div class="creator-orders">${c.ordersCount} заказ.</div>
+          <div class="creator-price">от ${c.priceStars} ★</div>
+        </div>
+      `;
+      const img = row.querySelector(".creator-avatar");
+      const testImg = new Image();
+      testImg.onerror = () => img.classList.add("no-avatar");
+      testImg.src = c.avatarUrl;
+
+      row.addEventListener("click", () => {
+        if (c.link) tg.openLink(c.link.startsWith("http") ? c.link : `https://${c.link}`);
+      });
+      list.appendChild(row);
+    });
+    el("creatorsCard").hidden = false;
+  } catch (e) {
+    // тихо игнорируем — каталог медиек не критичен для основной покупки
+  }
+}
+
 async function load() {
   try {
     const res = await fetch("/api/product");
@@ -168,3 +209,4 @@ el("btnTon").addEventListener("click", async () => {
 });
 
 load();
+loadCreators();

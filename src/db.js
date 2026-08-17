@@ -30,6 +30,7 @@ const DEFAULT_DATA = {
   ],
   orders: [],
   applications: [],
+  creators: [],
 };
 
 function ensureFile() {
@@ -50,8 +51,10 @@ function read() {
 // если файл data/db.json был создан более старой версией кода. Не трогает
 // значения, уже выставленные вручную в админке (например изменённую цену).
 function migrate(data) {
-  if (!Array.isArray(data.giftTiers)) return data;
   let changed = false;
+  if (!Array.isArray(data.creators)) { data.creators = []; changed = true; }
+  if (!Array.isArray(data.applications)) { data.applications = []; changed = true; }
+  if (!Array.isArray(data.giftTiers)) { if (changed) write(data); return data; }
   data.giftTiers = data.giftTiers.map((g) => {
     const base = DEFAULT_DATA.giftTiers.find((d) => d.id === g.id);
     if (!base) return g;
@@ -141,6 +144,48 @@ function findApplication(id) {
   return (data.applications || []).find((a) => a.id === id) || null;
 }
 
+// --- медийки (creators), появившиеся из принятых заявок ---
+
+function addCreator(creator) {
+  const data = read();
+  if (!Array.isArray(data.creators)) data.creators = [];
+  const record = {
+    id: data.creators.length + 1,
+    ordersCount: 0,
+    active: true,
+    bannerUrl: null,
+    createdAt: new Date().toISOString(),
+    ...creator,
+  };
+  data.creators.push(record);
+  write(data);
+  return record;
+}
+
+function updateCreator(id, patch) {
+  const data = read();
+  const idx = (data.creators || []).findIndex((c) => c.id === id);
+  if (idx === -1) return null;
+  data.creators[idx] = { ...data.creators[idx], ...patch };
+  write(data);
+  return data.creators[idx];
+}
+
+function findCreatorById(id) {
+  const data = read();
+  return (data.creators || []).find((c) => c.id === id) || null;
+}
+
+function findCreatorByUserId(userId) {
+  const data = read();
+  return (data.creators || []).find((c) => c.userId === userId) || null;
+}
+
+function listActiveCreators() {
+  const data = read();
+  return (data.creators || []).filter((c) => c.active);
+}
+
 module.exports = {
   read,
   write,
@@ -152,4 +197,9 @@ module.exports = {
   addApplication,
   updateApplication,
   findApplication,
+  addCreator,
+  updateCreator,
+  findCreatorById,
+  findCreatorByUserId,
+  listActiveCreators,
 };

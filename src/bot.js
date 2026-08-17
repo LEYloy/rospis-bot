@@ -79,12 +79,26 @@ bot.on("message:text", async (ctx, next) => {
 
   if (state.step === "name") {
     state.name = text;
+    state.step = "description";
+    return ctx.reply("Опишите в паре предложений, что вы предлагаете — это увидят покупатели в вашей карточке:");
+  }
+
+  if (state.step === "description") {
+    state.description = text;
     state.step = "link";
     return ctx.reply("Ссылка на ваш канал/соцсеть, где вас можно проверить:");
   }
 
   if (state.step === "link") {
     state.link = text;
+    state.step = "price";
+    return ctx.reply("Стартовая цена ваших работ — сколько звёзд ★ будет показано как «от N ★»?");
+  }
+
+  if (state.step === "price") {
+    const price = Number(text.replace(/[^\d]/g, ""));
+    if (!price || price < 1) return ctx.reply("Введите число, например 200");
+    state.price = price;
     state.step = "reason";
     return ctx.reply("Коротко: почему хотите продавать роспись от себя?");
   }
@@ -97,7 +111,9 @@ bot.on("message:text", async (ctx, next) => {
       userId: ctx.from.id,
       username: ctx.from.username || null,
       name: state.name,
+      description: state.description,
       link: state.link,
+      price: state.price,
       reason: state.reason,
     });
 
@@ -111,7 +127,9 @@ bot.on("message:text", async (ctx, next) => {
       ADMIN_ID,
       `🆕 Заявка на MediaSigned #${application.id}\n\n` +
         `Имя: ${application.name}\n` +
+        `Описание: ${application.description}\n` +
         `Ссылка: ${application.link}\n` +
+        `Стартовая цена: ${application.price} ★\n` +
         `От: @${application.username || application.userId}\n\n` +
         `Причина: ${application.reason}`,
       { reply_markup: kb }
@@ -145,14 +163,32 @@ bot.on("callback_query:data", async (ctx, next) => {
   );
   await ctx.answerCallbackQuery();
 
-  const notifyText =
-    status === "accepted"
-      ? "Ваша заявка на MediaSigned принята ✅ Мы свяжемся с вами, чтобы настроить продажу росписи от вашего имени."
-      : "К сожалению, ваша заявка на MediaSigned отклонена.";
-  try {
-    await ctx.api.sendMessage(application.userId, notifyText);
-  } catch (e) {
-    console.error("не удалось уведомить заявителя:", e.message);
+  if (status === "accepted") {
+    db.addCreator({
+      userId: application.userId,
+      username: application.username,
+      name: application.name,
+      description: application.description,
+      link: application.link,
+      priceStars: application.price,
+    });
+
+    const kb = new InlineKeyboard().webApp("✏️ Моя карточка", `${PUBLIC_URL}/creator`);
+    try {
+      await ctx.api.sendMessage(
+        application.userId,
+        "Ваша заявка на MediaSigned принята ✅ Вы уже в каталоге! В личной карточке можно добавить баннер, изменить описание и цену.",
+        { reply_markup: kb }
+      );
+    } catch (e) {
+      console.error("не удалось уведомить заявителя:", e.message);
+    }
+  } else {
+    try {
+      await ctx.api.sendMessage(application.userId, "К сожалению, ваша заявка на MediaSigned отклонена.");
+    } catch (e) {
+      console.error("не удалось уведомить заявителя:", e.message);
+    }
   }
 });
 
