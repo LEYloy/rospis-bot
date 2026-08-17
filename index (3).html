@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Моя карточка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="page" id="page" hidden>
+    <div class="eyebrow">Личный кабинет</div>
+    <h1 class="title">Моя карточка</h1>
+
+    <div class="preview-card" id="previewCard">
+      <div class="preview-banner" id="previewBanner"></div>
+      <div class="preview-row">
+        <div class="preview-avatar" id="previewAvatar"></div>
+        <div class="preview-meta">
+          <div class="preview-name" id="previewName">—</div>
+          <div class="preview-desc" id="previewDesc">—</div>
+        </div>
+        <div class="preview-price" id="previewPrice">от — ★</div>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>Описание (видят покупатели)</span>
+      <textarea id="fDesc" rows="3"></textarea>
+    </label>
+    <label class="field">
+      <span>Ссылка на канал/соцсеть</span>
+      <input id="fLink" type="text" />
+    </label>
+    <label class="field">
+      <span>Стартовая цена, ★</span>
+      <input id="fPrice" type="number" min="1" />
+    </label>
+    <label class="field">
+      <span>Ссылка на баннер (картинка сверху карточки)</span>
+      <input id="fBanner" type="text" placeholder="https://..." />
+    </label>
+    <label class="field switch-field">
+      <span>Показывать меня в каталоге</span>
+      <input id="fActive" type="checkbox" />
+    </label>
+
+    <button class="save-btn" id="saveBtn">Сохранить</button>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div class="denied" id="denied" hidden>
+    <div class="denied-title">Заявка не найдена или ещё не одобрена</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

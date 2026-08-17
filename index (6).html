@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Роспись</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="page">
+    <div class="eyebrow" id="eyebrow">Персональная роспись</div>
+
+    <div class="seal">
+      <img src="assets/logo.png" alt="Логотип" class="logo-img" />
+    </div>
+
+    <h1 class="title" id="title">Роспись</h1>
+    <p class="desc" id="desc">Загрузка…</p>
+
+    <div class="price-row" id="priceRow"></div>
+
+    <div class="card gifts-card" id="giftsCard" hidden>
+      <div class="gifts-head">Выберите подарок</div>
+      <div class="gifts-grid" id="giftsGrid"></div>
+    </div>
+
+    <div class="card creators-card" id="creatorsCard" hidden>
+      <div class="gifts-head">Медийки</div>
+      <div class="creators-list" id="creatorsList"></div>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="sheet-overlay" id="sheetOverlay" hidden>
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-screen" id="screenDetail">
+        <div class="sheet-media"><img id="sheetImg" alt="" /><span id="sheetEmoji" class="sheet-emoji" hidden></span></div>
+        <div class="sheet-title" id="sheetName">—</div>
+        <button class="buy-btn" id="btnOpenPay">Купить · <span id="sheetPrice">—</span></button>
+      </div>
+
+      <div class="sheet-screen hidden" id="screenPay">
+        <button class="sheet-back" id="btnBack">← Назад</button>
+        <div class="sheet-title" style="margin-top:6px">Оплата</div>
+        <div class="sheet-sub">К оплате <span id="paySummary">—</span></div>
+        <div class="pay-stack">
+          <button class="pay-btn pay-stars" id="btnStars">
+            <span class="pay-btn-label">Telegram Stars</span>
+            <span class="pay-btn-sub" id="starsAmount">— ★</span>
+          </button>
+          <button class="pay-btn pay-crypto" id="btnCrypto">
+            <span class="pay-btn-label">CryptoBot</span>
+            <span class="pay-btn-sub" id="cryptoAmount">— TON</span>
+          </button>
+          <button class="pay-btn pay-ton" id="btnTon">
+            <span class="pay-btn-label">Перевести TON напрямую</span>
+            <span class="pay-btn-sub" id="tonAmount">— TON</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

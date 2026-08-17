@@ -25,6 +25,7 @@ app.use(
 
 app.use("/shop", express.static(path.join(__dirname, "..", "public", "shop")));
 app.use("/admin", express.static(path.join(__dirname, "..", "public", "admin")));
+app.use("/creator", express.static(path.join(__dirname, "..", "public", "creator")));
 
 // ---------- helpers ----------
 
@@ -53,6 +54,66 @@ function requireAdmin(req, res) {
 app.get("/api/product", (req, res) => {
   const data = db.read();
   res.json({ product: data.product, giftTiers: data.giftTiers });
+});
+
+// ---------- каталог медиек ----------
+
+app.get("/api/creators", (req, res) => {
+  const creators = db.listActiveCreators().map((c) => ({
+    id: c.id,
+    username: c.username,
+    name: c.name,
+    description: c.description,
+    link: c.link,
+    priceStars: c.priceStars,
+    ordersCount: c.ordersCount || 0,
+    bannerUrl: c.bannerUrl || null,
+    avatarUrl: `/api/avatar/${c.userId}`,
+  }));
+  res.json({ creators });
+});
+
+// проксирует фото профиля пользователя из Telegram, не раскрывая токен бота на фронте
+app.get("/api/avatar/:userId", async (req, res) => {
+  try {
+    const userId = Number(req.params.userId);
+    const photos = await bot.api.getUserProfilePhotos(userId, { limit: 1 });
+    if (!photos.total_count) return res.status(404).end();
+    const sizes = photos.photos[0];
+    const fileId = sizes[sizes.length - 1].file_id; // самый крупный размер
+    const file = await bot.api.getFile(fileId);
+    const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
+    const upstream = await fetch(url);
+    if (!upstream.ok) return res.status(404).end();
+    res.set("Content-Type", upstream.headers.get("content-type") || "image/jpeg");
+    res.set("Cache-Control", "public, max-age=3600");
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (e) {
+    res.status(404).end();
+  }
+});
+
+app.post("/api/creator/me", (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const creator = db.findCreatorByUserId(user.id);
+  if (!creator) return res.status(404).json({ error: "не найдено" });
+  res.json({ creator });
+});
+
+app.post("/api/creator/update", (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const creator = db.findCreatorByUserId(user.id);
+  if (!creator) return res.status(404).json({ error: "не найдено" });
+
+  const { patch } = req.body;
+  const allowed = ["description", "link", "priceStars", "bannerUrl", "active"];
+  const clean = {};
+  for (const k of allowed) if (k in (patch || {})) clean[k] = patch[k];
+  const updated = db.updateCreator(creator.id, clean);
+  res.json({ creator: updated });
 });
 
 // находит выбранный подарок по id, либо возвращает null
