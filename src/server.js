@@ -73,6 +73,13 @@ app.get("/api/creators", (req, res) => {
   res.json({ creators });
 });
 
+// подарки, которые именно эта медийка предлагает, с её собственными ценами
+app.get("/api/creators/:id/gifts", (req, res) => {
+  const id = Number(req.params.id);
+  const gifts = db.getEffectiveCreatorGifts(id, { onlyEnabled: true });
+  res.json({ gifts });
+});
+
 // проксирует фото профиля пользователя из Telegram, не раскрывая токен бота на фронте
 app.get("/api/avatar/:userId", async (req, res) => {
   try {
@@ -109,7 +116,7 @@ app.post("/api/creator/update", (req, res) => {
   if (!creator) return res.status(404).json({ error: "не найдено" });
 
   const { patch } = req.body;
-  const allowed = ["description", "link", "priceStars", "bannerUrl", "active"];
+  const allowed = ["description", "link", "priceStars", "bannerUrl", "active", "giftOverrides"];
   const clean = {};
   for (const k of allowed) if (k in (patch || {})) clean[k] = patch[k];
   const updated = db.updateCreator(creator.id, clean);
@@ -127,23 +134,59 @@ function findCreator(giftId, creatorId) {
   return db.findCreatorById(Number(creatorId));
 }
 
+// считает итоговую цену подарка с учётом персональной цены медийки и количества
+function resolveOrderPricing(req) {
+  const data = db.read();
+  const qty = Math.min(20, Math.max(1, Number(req.body.qty) || 1));
+  const creatorId = req.body.creatorId ? Number(req.body.creatorId) : null;
+
+  let unitStars, unitTon, giftName, creator = null;
+
+  if (creatorId) {
+    creator = db.findCreatorById(creatorId);
+    const gifts = db.getEffectiveCreatorGifts(creatorId, { onlyEnabled: false });
+    const g = gifts.find((x) => x.id === req.body.giftId);
+    if (!g || !g.enabled) throw Object.assign(new Error("этот подарок недоступен у медийки"), { status: 400 });
+    unitStars = g.stars;
+    unitTon = g.ton;
+    giftName = g.name;
+  } else {
+    const gift = findGift(data, req.body.giftId);
+    unitStars = gift ? gift.stars : data.product.priceStars;
+    unitTon = gift ? gift.ton : data.product.priceTon;
+    giftName = gift ? gift.name : null;
+  }
+
+  return {
+    data,
+    creator,
+    qty,
+    giftId: req.body.giftId || null,
+    giftName,
+    caption: (req.body.caption || "").slice(0, 500),
+    giftToUsername: (req.body.giftToUsername || "").replace(/^@/, "").slice(0, 64) || null,
+    totalStars: unitStars * qty,
+    totalTon: Math.round(unitTon * qty * 100) / 100,
+  };
+}
+
 app.post("/api/pay/stars", async (req, res) => {
   try {
     const user = requireUser(req, res);
     if (!user) return;
-    const data = db.read();
+    const { data, creator, qty, giftId, giftName, caption, giftToUsername, totalStars } = resolveOrderPricing(req);
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
-    const gift = findGift(data, req.body.giftId);
-    const creator = findCreator(req.body.giftId, req.body.creatorId);
-    const title = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
-    const amountStars = gift ? gift.stars : data.product.priceStars;
+    const title = giftName ? `${data.product.title} — ${giftName}${qty > 1 ? ` ×${qty}` : ""}` : data.product.title;
+    // Telegram требует непустой description — подстраховываемся на случай,
+    // если поле "Описание" в /admin оставили пустым
+    const description = (data.product.description && data.product.description.trim()) || title || "Роспись";
 
     const payload = generatePayload("stars");
     const link = await createStarsInvoiceLink(bot, {
       title,
-      description: data.product.description,
-      amountStars,
+      description,
+      amountStars: totalStars,
       payload,
     });
 
@@ -151,9 +194,12 @@ app.post("/api/pay/stars", async (req, res) => {
       userId: user.id,
       username: user.username || null,
       method: "stars",
-      amount: amountStars,
-      giftId: gift ? gift.id : null,
-      giftName: gift ? gift.name : null,
+      amount: totalStars,
+      qty,
+      giftId,
+      giftName,
+      caption: caption || null,
+      giftToUsername,
       creatorId: creator ? creator.id : null,
       payload,
     });
@@ -161,7 +207,7 @@ app.post("/api/pay/stars", async (req, res) => {
     res.json({ link });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "internal error", detail: String(e.message || e) });
+    res.status(e.status || 500).json({ error: "internal error", detail: String(e.message || e) });
   }
 });
 
@@ -170,18 +216,15 @@ app.post("/api/pay/cryptobot", async (req, res) => {
     const user = requireUser(req, res);
     if (!user) return;
     const { asset } = req.body;
-    const data = db.read();
+    const { data, creator, qty, giftId, giftName, caption, giftToUsername, totalTon } = resolveOrderPricing(req);
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
 
-    const gift = findGift(data, req.body.giftId);
-    const creator = findCreator(req.body.giftId, req.body.creatorId);
-    const description = gift ? `${data.product.title} — ${gift.name}` : data.product.title;
-    const amountTon = gift ? gift.ton : data.product.priceTon;
+    const description = giftName ? `${data.product.title} — ${giftName}${qty > 1 ? ` ×${qty}` : ""}` : data.product.title;
 
     const payload = generatePayload("cb");
     const invoice = await createCryptoBotInvoice({
       asset: asset || "TON",
-      amount: amountTon,
+      amount: totalTon,
       description,
       payload,
     });
@@ -190,9 +233,12 @@ app.post("/api/pay/cryptobot", async (req, res) => {
       userId: user.id,
       username: user.username || null,
       method: "cryptobot",
-      amount: amountTon,
-      giftId: gift ? gift.id : null,
-      giftName: gift ? gift.name : null,
+      amount: totalTon,
+      qty,
+      giftId,
+      giftName,
+      caption: caption || null,
+      giftToUsername,
       creatorId: creator ? creator.id : null,
       payload,
       cryptobotInvoiceId: invoice.invoice_id,
@@ -201,7 +247,7 @@ app.post("/api/pay/cryptobot", async (req, res) => {
     res.json({ payUrl: invoice.pay_url });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "internal error", detail: String(e.message || e) });
+    res.status(e.status || 500).json({ error: "internal error", detail: String(e.message || e) });
   }
 });
 
@@ -209,25 +255,24 @@ app.post("/api/pay/ton", async (req, res) => {
   try {
     const user = requireUser(req, res);
     if (!user) return;
-    const data = db.read();
+    const { data, creator, qty, giftId, giftName, caption, giftToUsername, totalTon } = resolveOrderPricing(req);
     if (!data.product.active) return res.status(400).json({ error: "продукт недоступен" });
     const address = process.env.TON_WALLET_ADDRESS;
     if (!address) return res.status(500).json({ error: "TON_WALLET_ADDRESS не настроен" });
 
-    const gift = findGift(data, req.body.giftId);
-    const creator = findCreator(req.body.giftId, req.body.creatorId);
-    const amountTon = gift ? gift.ton : data.product.priceTon;
-
     const payload = generatePayload("ton");
-    const link = buildTonTransferLink({ address, amountTon, comment: payload });
+    const link = buildTonTransferLink({ address, amountTon: totalTon, comment: payload });
 
     const order = db.addOrder({
       userId: user.id,
       username: user.username || null,
       method: "ton",
-      amount: amountTon,
-      giftId: gift ? gift.id : null,
-      giftName: gift ? gift.name : null,
+      amount: totalTon,
+      qty,
+      giftId,
+      giftName,
+      caption: caption || null,
+      giftToUsername,
       creatorId: creator ? creator.id : null,
       payload,
     });
@@ -235,7 +280,7 @@ app.post("/api/pay/ton", async (req, res) => {
     res.json({ link, orderId: order.id, payload });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "internal error" });
+    res.status(e.status || 500).json({ error: "internal error", detail: String(e.message || e) });
   }
 });
 

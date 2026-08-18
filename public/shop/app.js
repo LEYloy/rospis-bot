@@ -12,7 +12,6 @@ function setPageStatus(text, kind) {
   pageStatusEl.className = "status" + (kind ? " " + kind : "");
 }
 
-// статус внутри шторки — виден и на экране деталей, и на экране оплаты
 function setSheetStatus(text, kind) {
   [el("sheetStatus"), el("sheetStatus2")].forEach((node) => {
     if (!node) return;
@@ -32,11 +31,12 @@ async function api(path, body) {
   return json;
 }
 
-let giftTiers = [];
 let selectedCreator = null;
 let selectedGift = null;
+let qty = 1;
+let friendUsername = null;
 
-// --- шторка (bottom sheet) с тремя экранами: подарки медийки → деталь → оплата ---
+// --- шторка (bottom sheet): подарки медийки → деталь → оплата ---
 
 function showScreen(id) {
   ["screenGifts", "screenDetail", "screenPay"].forEach((s) => {
@@ -45,34 +45,51 @@ function showScreen(id) {
   setSheetStatus("");
 }
 
-function openSheetForCreator(creator) {
+async function openSheetForCreator(creator) {
   selectedCreator = creator;
   selectedGift = null;
+  qty = 1;
+  friendUsername = null;
+  el("friendBtn").textContent = "🎁 Подарить другу";
 
   el("sheetCreatorName").textContent = creator.name;
   el("sheetCreatorDesc").textContent = creator.description || "";
   el("sheetCreatorAvatar").style.backgroundImage = `url('${creator.avatarUrl}')`;
+  el("sheetBanner").style.backgroundImage = creator.bannerUrl ? `url('${creator.bannerUrl}')` : "none";
+  el("sheetBanner").hidden = !creator.bannerUrl;
 
   const grid = el("giftsGrid");
-  grid.innerHTML = "";
-  giftTiers.forEach((g) => {
-    const card = document.createElement("div");
-    card.className = "gift-card";
-    card.title = g.name;
-    const media = g.photo
-      ? `<img src="${g.photo}" alt="${g.name}" />`
-      : `<span class="g-emoji">${g.emoji || "🎁"}</span>`;
-    card.innerHTML = `
-      <div class="g-media">${media}</div>
-      <span class="g-price"><span class="g-price-icon">★</span>${g.stars}</span>
-    `;
-    card.addEventListener("click", () => selectGift(g));
-    grid.appendChild(card);
-  });
+  grid.innerHTML = `<div class="gifts-loading">Загрузка…</div>`;
 
   el("sheetOverlay").hidden = false;
   requestAnimationFrame(() => el("sheetOverlay").classList.add("open"));
   showScreen("screenGifts");
+
+  try {
+    const res = await fetch(`/api/creators/${creator.id}/gifts`);
+    const { gifts } = await res.json();
+    grid.innerHTML = "";
+    if (!gifts.length) {
+      grid.innerHTML = `<div class="gifts-empty">Медийка пока не выбрала подарки</div>`;
+      return;
+    }
+    gifts.forEach((g) => {
+      const card = document.createElement("div");
+      card.className = "gift-card";
+      card.title = g.name;
+      const media = g.photo
+        ? `<img src="${g.photo}" alt="${g.name}" />`
+        : `<span class="g-emoji">${g.emoji || "🎁"}</span>`;
+      card.innerHTML = `
+        <div class="g-media">${media}</div>
+        <span class="g-price"><span class="g-price-icon">★</span>${g.stars}</span>
+      `;
+      card.addEventListener("click", () => selectGift(g));
+      grid.appendChild(card);
+    });
+  } catch (e) {
+    grid.innerHTML = `<div class="gifts-empty">Не удалось загрузить подарки</div>`;
+  }
 }
 
 function closeSheet() {
@@ -88,10 +105,19 @@ el("sheetOverlay").addEventListener("click", (e) => {
   if (e.target === el("sheetOverlay")) closeSheet();
 });
 
+function updateBuyButton() {
+  const total = selectedGift.stars * qty;
+  el("sheetPrice").textContent = `${total} ★`;
+  el("qtyValue").textContent = qty;
+}
+
 function selectGift(gift) {
   selectedGift = gift;
+  qty = 1;
+  friendUsername = null;
+  el("friendBtn").textContent = "🎁 Подарить другу";
+  el("giftCaption").value = "";
   el("sheetName").textContent = gift.name;
-  el("sheetPrice").textContent = `${gift.stars} ★`;
   const img = el("sheetImg");
   const emoji = el("sheetEmoji");
   if (gift.photo) {
@@ -103,28 +129,58 @@ function selectGift(gift) {
     emoji.textContent = gift.emoji || "🎁";
     emoji.hidden = false;
   }
+  updateBuyButton();
   showScreen("screenDetail");
 }
 
 el("btnBackToGifts").addEventListener("click", () => showScreen("screenGifts"));
 el("btnBack").addEventListener("click", () => showScreen("screenDetail"));
 
+el("qtyMinus").addEventListener("click", () => {
+  if (qty > 1) qty--;
+  updateBuyButton();
+});
+el("qtyPlus").addEventListener("click", () => {
+  if (qty < 20) qty++;
+  updateBuyButton();
+});
+
+// --- "подарить другу" мини-попап ---
+
+el("friendBtn").addEventListener("click", () => {
+  el("friendUsernameInput").value = friendUsername || "";
+  el("friendOverlay").hidden = false;
+});
+el("friendCancel").addEventListener("click", () => {
+  el("friendOverlay").hidden = true;
+});
+el("friendOverlay").addEventListener("click", (e) => {
+  if (e.target === el("friendOverlay")) el("friendOverlay").hidden = true;
+});
+el("friendDone").addEventListener("click", () => {
+  const v = el("friendUsernameInput").value.trim().replace(/^@/, "");
+  friendUsername = v || null;
+  el("friendBtn").textContent = friendUsername ? `🎁 Для @${friendUsername}` : "🎁 Подарить другу";
+  el("friendOverlay").hidden = true;
+});
+
 el("btnOpenPay").addEventListener("click", () => {
-  el("starsAmount").textContent = `${selectedGift.stars} ★`;
-  el("cryptoAmount").textContent = `${selectedGift.ton} TON`;
-  el("tonAmount").textContent = `${selectedGift.ton} TON`;
-  el("paySummary").textContent = `${selectedGift.stars} ★ · ${selectedGift.name}`;
+  const totalStars = selectedGift.stars * qty;
+  const totalTon = Math.round(selectedGift.ton * qty * 100) / 100;
+  el("starsAmount").textContent = `${totalStars} ★`;
+  el("cryptoAmount").textContent = `${totalTon} TON`;
+  el("tonAmount").textContent = `${totalTon} TON`;
+  el("paySummary").textContent = `${totalStars} ★ · ${selectedGift.name}${qty > 1 ? ` ×${qty}` : ""}`;
   showScreen("screenPay");
 });
 
-// --- загрузка каталога подарков (используется внутри шторки) и списка медиек ---
+// --- загрузка данных страницы ---
 
-async function loadGiftTiers() {
+async function loadProduct() {
   const res = await fetch("/api/product");
-  const { product, giftTiers: tiers } = await res.json();
+  const { product } = await res.json();
   el("title").textContent = product.title;
   el("desc").textContent = product.description;
-  giftTiers = tiers || [];
   if (!product.active) setPageStatus("Сейчас продажи временно закрыты", "error");
 }
 
@@ -142,6 +198,7 @@ async function loadCreators() {
     creators.forEach((c) => {
       const row = document.createElement("div");
       row.className = "creator-row";
+      if (c.bannerUrl) row.style.setProperty("--row-banner", `url('${c.bannerUrl}')`);
       const initial = (c.name || c.username || "?").trim().charAt(0).toUpperCase();
       row.innerHTML = `
         <div class="creator-avatar" style="background-image:url('${c.avatarUrl}')">
@@ -172,14 +229,21 @@ async function loadCreators() {
 
 // --- оплата ---
 
+function buildPayBody() {
+  return {
+    giftId: selectedGift.id,
+    creatorId: selectedCreator ? selectedCreator.id : null,
+    qty,
+    caption: el("giftCaption").value.trim(),
+    giftToUsername: friendUsername,
+  };
+}
+
 el("btnStars").addEventListener("click", async () => {
   if (!selectedGift) return;
   setSheetStatus("Готовим счёт…");
   try {
-    const { link } = await api("/api/pay/stars", {
-      giftId: selectedGift.id,
-      creatorId: selectedCreator ? selectedCreator.id : null,
-    });
+    const { link } = await api("/api/pay/stars", buildPayBody());
     tg.openInvoice(link, (status) => {
       if (status === "paid") {
         setSheetStatus("Оплата прошла успешно ✅", "ok");
@@ -196,11 +260,7 @@ el("btnCrypto").addEventListener("click", async () => {
   if (!selectedGift) return;
   setSheetStatus("Создаём счёт в CryptoBot…");
   try {
-    const { payUrl } = await api("/api/pay/cryptobot", {
-      asset: "TON",
-      giftId: selectedGift.id,
-      creatorId: selectedCreator ? selectedCreator.id : null,
-    });
+    const { payUrl } = await api("/api/pay/cryptobot", { asset: "TON", ...buildPayBody() });
     if (payUrl.startsWith("https://t.me/")) {
       tg.openTelegramLink(payUrl);
     } else {
@@ -216,10 +276,7 @@ el("btnTon").addEventListener("click", async () => {
   if (!selectedGift) return;
   setSheetStatus("Готовим перевод…");
   try {
-    const { link } = await api("/api/pay/ton", {
-      giftId: selectedGift.id,
-      creatorId: selectedCreator ? selectedCreator.id : null,
-    });
+    const { link } = await api("/api/pay/ton", buildPayBody());
     tg.openLink(link);
     setSheetStatus("Подтвердите перевод в кошельке. Статус проверит продавец после получения.");
   } catch (e) {
@@ -227,5 +284,5 @@ el("btnTon").addEventListener("click", async () => {
   }
 });
 
-loadGiftTiers();
+loadProduct();
 loadCreators();

@@ -12,11 +12,12 @@ async function api(path, body) {
     body: JSON.stringify({ initData, ...(body || {}) }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "request failed");
+  if (!res.ok) throw new Error(json.detail || json.error || "request failed");
   return json;
 }
 
 let creator = null;
+let catalog = []; // общий каталог подарков (из /api/product)
 
 function renderPreview() {
   el("previewName").textContent = creator.name || "—";
@@ -31,16 +32,63 @@ function renderPreview() {
   avatar.textContent = "";
 }
 
+function renderGiftsEditor() {
+  const wrap = el("giftsEditor");
+  wrap.innerHTML = "";
+  const overrides = creator.giftOverrides || {};
+
+  catalog.forEach((g) => {
+    const o = overrides[g.id] || {};
+    const enabled = o.enabled !== undefined ? o.enabled : true;
+    const stars = o.stars !== undefined ? o.stars : g.stars;
+
+    const row = document.createElement("div");
+    row.className = "gift-editor-row" + (enabled ? "" : " disabled");
+    row.innerHTML = `
+      <label class="gift-toggle">
+        <input type="checkbox" data-gid="${g.id}" class="g-enabled" ${enabled ? "checked" : ""} />
+      </label>
+      <div class="gift-editor-media">${g.photo ? `<img src="${g.photo}" />` : `<span>${g.emoji || "🎁"}</span>`}</div>
+      <div class="gift-editor-name">${g.name}</div>
+      <div class="gift-editor-price">
+        <input type="number" min="1" value="${stars}" data-gid="${g.id}" class="g-stars" />
+        <span>★</span>
+      </div>
+    `;
+    row.querySelector(".g-enabled").addEventListener("change", (e) => {
+      row.classList.toggle("disabled", !e.target.checked);
+    });
+    wrap.appendChild(row);
+  });
+}
+
+function collectGiftOverrides() {
+  const result = {};
+  document.querySelectorAll(".gift-editor-row").forEach((row) => {
+    const gid = row.querySelector(".g-enabled").dataset.gid;
+    const enabled = row.querySelector(".g-enabled").checked;
+    const stars = Number(row.querySelector(".g-stars").value) || 0;
+    result[gid] = { enabled, stars };
+  });
+  return result;
+}
+
 async function load() {
   try {
-    const { creator: c } = await api("/api/creator/me");
+    const [{ creator: c }, productRes] = await Promise.all([
+      api("/api/creator/me"),
+      fetch("/api/product").then((r) => r.json()),
+    ]);
     creator = c;
+    catalog = productRes.giftTiers || [];
+
     el("fDesc").value = c.description || "";
     el("fLink").value = c.link || "";
     el("fPrice").value = c.priceStars || "";
     el("fBanner").value = c.bannerUrl || "";
     el("fActive").checked = !!c.active;
     renderPreview();
+    renderGiftsEditor();
     el("page").hidden = false;
   } catch (e) {
     el("denied").hidden = false;
@@ -62,6 +110,7 @@ el("saveBtn").addEventListener("click", async () => {
       priceStars: Number(el("fPrice").value) || 0,
       bannerUrl: el("fBanner").value.trim() || null,
       active: el("fActive").checked,
+      giftOverrides: collectGiftOverrides(),
     };
     const { creator: c } = await api("/api/creator/update", { patch });
     creator = c;

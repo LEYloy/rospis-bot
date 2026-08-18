@@ -375,6 +375,178 @@ body {
   color: var(--muted);
 }
 
+.sheet-banner {
+  width: 100%;
+  aspect-ratio: 16 / 6;
+  border-radius: 12px;
+  background: var(--surface-2) center/cover no-repeat;
+  margin-bottom: 14px;
+}
+
+.gifts-loading, .gifts-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.detail-field {
+  display: block;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.detail-field span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.detail-field textarea {
+  width: 100%;
+  font-family: "Manrope", sans-serif;
+  background: var(--surface-2);
+  border: 1px solid rgba(91,147,255,0.16);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 13.5px;
+  resize: vertical;
+}
+
+.detail-field textarea:focus { outline: none; border-color: var(--accent); }
+
+.friend-btn {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid rgba(91,147,255,0.18);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--ink);
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.friend-btn:active { transform: scale(0.98); }
+
+.qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+.qty-stepper button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(91,147,255,0.18);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qty-stepper span {
+  min-width: 16px;
+  text-align: center;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --- мини-попап "кому подарить" --- */
+
+.mini-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,4,10,0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 20px;
+}
+
+.mini-overlay[hidden] { display: none; }
+
+.mini-card {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid rgba(91,147,255,0.18);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.mini-title {
+  font-family: "Fraunces", serif;
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  color: var(--ink);
+}
+
+.mini-card input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid rgba(91,147,255,0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--ink);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.mini-card input:focus { outline: none; border-color: var(--accent); }
+
+.mini-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.mini-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mini-btn {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 11px;
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.mini-cancel {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.mini-done {
+  background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+  color: #fff;
+}
+
 /* --- список медиек (каталог) --- */
 
 .creators-list {
@@ -387,7 +559,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--surface-2);
+  background: var(--row-banner, none) center/cover no-repeat, var(--surface-2);
+  background-blend-mode: overlay;
   border-radius: 12px;
   padding: 10px 12px;
   cursor: pointer;

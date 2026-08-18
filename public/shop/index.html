@@ -36,6 +36,7 @@
       <div class="sheet-handle"></div>
 
       <div class="sheet-screen" id="screenGifts">
+        <div class="sheet-banner" id="sheetBanner"></div>
         <div class="sheet-creator-head">
           <div class="sheet-creator-avatar" id="sheetCreatorAvatar"></div>
           <div>
@@ -51,6 +52,23 @@
         <button class="sheet-back" id="btnBackToGifts">← Назад</button>
         <div class="sheet-media"><img id="sheetImg" alt="" /><span id="sheetEmoji" class="sheet-emoji" hidden></span></div>
         <div class="sheet-title" id="sheetName">—</div>
+
+        <label class="detail-field">
+          <span>Подпись к росписи (необязательно)</span>
+          <textarea id="giftCaption" rows="2" placeholder="Что написать..."></textarea>
+        </label>
+
+        <button class="friend-btn" id="friendBtn">🎁 Подарить другу</button>
+
+        <div class="qty-row">
+          <span>Количество</span>
+          <div class="qty-stepper">
+            <button id="qtyMinus" type="button">−</button>
+            <span id="qtyValue">1</span>
+            <button id="qtyPlus" type="button">+</button>
+          </div>
+        </div>
+
         <button class="buy-btn" id="btnOpenPay">Купить · <span id="sheetPrice">—</span></button>
         <div class="sheet-status" id="sheetStatus"></div>
       </div>
@@ -74,6 +92,18 @@
           </button>
         </div>
         <div class="sheet-status" id="sheetStatus2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mini-overlay" id="friendOverlay" hidden>
+    <div class="mini-card">
+      <div class="mini-title">Кому подарить</div>
+      <input id="friendUsernameInput" type="text" placeholder="@username" />
+      <div class="mini-hint">Оставь пустым, чтобы подарить себе</div>
+      <div class="mini-actions">
+        <button class="mini-btn mini-cancel" id="friendCancel">Отмена</button>
+        <button class="mini-btn mini-done" id="friendDone">Готово</button>
       </div>
     </div>
   </div>

@@ -54,6 +54,10 @@ function migrate(data) {
   let changed = false;
   if (!Array.isArray(data.creators)) { data.creators = []; changed = true; }
   if (!Array.isArray(data.applications)) { data.applications = []; changed = true; }
+  data.creators = data.creators.map((c) => {
+    if (c.giftOverrides === undefined) { changed = true; return { ...c, giftOverrides: {} }; }
+    return c;
+  });
   if (!Array.isArray(data.giftTiers)) { if (changed) write(data); return data; }
   data.giftTiers = data.giftTiers.map((g) => {
     const base = DEFAULT_DATA.giftTiers.find((d) => d.id === g.id);
@@ -154,6 +158,7 @@ function addCreator(creator) {
     ordersCount: 0,
     active: true,
     bannerUrl: null,
+    giftOverrides: {}, // { [giftId]: { enabled: bool, stars: number } } — своя цена/набор подарков
     createdAt: new Date().toISOString(),
     ...creator,
   };
@@ -195,6 +200,33 @@ function incrementCreatorOrders(id) {
   return data.creators[idx];
 }
 
+// Собирает эффективный список подарков для конкретной медийки: берёт общий
+// каталог (фото/название/эмодзи), но цену и включён/выключен — из её
+// giftOverrides, если она их задавала. ton всегда пересчитывается из stars
+// по общему курсу каталога (100 stars = 1 TON).
+function getEffectiveCreatorGifts(creatorId, { onlyEnabled = true } = {}) {
+  const data = read();
+  const creator = (data.creators || []).find((c) => c.id === creatorId);
+  if (!creator) return [];
+  const overrides = creator.giftOverrides || {};
+  return data.giftTiers
+    .map((g) => {
+      const o = overrides[g.id] || {};
+      const stars = o.stars !== undefined ? o.stars : g.stars;
+      const enabled = o.enabled !== undefined ? o.enabled : true;
+      return {
+        id: g.id,
+        name: g.name,
+        photo: g.photo,
+        emoji: g.emoji,
+        stars,
+        ton: Math.round((stars / 100) * 100) / 100,
+        enabled,
+      };
+    })
+    .filter((g) => (onlyEnabled ? g.enabled : true));
+}
+
 module.exports = {
   read,
   write,
@@ -212,4 +244,5 @@ module.exports = {
   findCreatorByUserId,
   listActiveCreators,
   incrementCreatorOrders,
+  getEffectiveCreatorGifts,
 };
