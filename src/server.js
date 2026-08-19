@@ -7,6 +7,7 @@ const { validateInitData } = require("./auth");
 const { createStarsInvoiceLink, generatePayload } = require("./payments/stars");
 const { createCryptoBotInvoice, verifyWebhookSignature } = require("./payments/cryptobot");
 const { buildTonTransferLink, findIncomingTonTransaction } = require("./payments/ton");
+const { beginCell } = require("@ton/core");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ADMIN_ID = Number(process.env.ADMIN_ID);
@@ -26,6 +27,16 @@ app.use(
 app.use("/shop", express.static(path.join(__dirname, "..", "public", "shop")));
 app.use("/admin", express.static(path.join(__dirname, "..", "public", "admin")));
 app.use("/creator", express.static(path.join(__dirname, "..", "public", "creator")));
+
+// манифест TonConnect — должен отдаваться с реальным PUBLIC_URL, поэтому генерируем на лету
+app.get("/tonconnect-manifest.json", (req, res) => {
+  const base = process.env.PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+  res.json({
+    url: base,
+    name: "MediaSigned",
+    iconUrl: `${base}/shop/assets/logo.png`,
+  });
+});
 
 // ---------- helpers ----------
 
@@ -277,7 +288,18 @@ app.post("/api/pay/ton", async (req, res) => {
       payload,
     });
 
-    res.json({ link, orderId: order.id, payload });
+    // готовим также данные для TonConnect (оплата подключённым кошельком без выхода из мини-аппы):
+    // amount в нанотонах и комментарий, закодированный как BOC-ячейка, как требует протокол
+    const amountNano = String(Math.round(totalTon * 1e9));
+    const commentCell = beginCell().storeUint(0, 32).storeStringTail(payload).endCell();
+    const payloadBoc = commentCell.toBoc().toString("base64");
+
+    res.json({
+      link,
+      orderId: order.id,
+      payload,
+      tonConnect: { address, amountNano, payloadBoc },
+    });
   } catch (e) {
     console.error(e);
     res.status(e.status || 500).json({ error: "internal error", detail: String(e.message || e) });

@@ -7,9 +7,10 @@
     "start": "node src/server.js"
   },
   "dependencies": {
-    "grammy": "^1.24.0",
-    "express": "^4.19.2",
+    "@ton/core": "^0.63.1",
     "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "grammy": "^1.24.0",
     "node-fetch": "^2.7.0"
   }
 }

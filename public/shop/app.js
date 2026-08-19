@@ -7,6 +7,37 @@ const initData = tg?.initData || "";
 const el = (id) => document.getElementById(id);
 const pageStatusEl = el("status");
 
+// --- TonConnect: подключение кошелька для прямой оплаты TON без выхода из мини-аппы ---
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+  manifestUrl: `${location.origin}/tonconnect-manifest.json`,
+});
+
+function shortAddr(addr) {
+  return addr ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : "";
+}
+
+function renderWalletStatus() {
+  const statusEl = el("walletStatus");
+  const btn = el("walletConnectBtn");
+  if (tonConnectUI.connected && tonConnectUI.account) {
+    statusEl.firstChild.textContent = `Кошелёк: ${shortAddr(tonConnectUI.account.address)} · `;
+    btn.textContent = "отключить";
+  } else {
+    statusEl.firstChild.textContent = "Кошелёк не подключен · ";
+    btn.textContent = "подключить";
+  }
+}
+
+tonConnectUI.onStatusChange(() => renderWalletStatus());
+
+el("walletConnectBtn").addEventListener("click", () => {
+  if (tonConnectUI.connected) {
+    tonConnectUI.disconnect();
+  } else {
+    tonConnectUI.openModal();
+  }
+});
+
 function setPageStatus(text, kind) {
   pageStatusEl.textContent = text || "";
   pageStatusEl.className = "status" + (kind ? " " + kind : "");
@@ -54,6 +85,17 @@ async function openSheetForCreator(creator) {
 
   el("sheetCreatorName").textContent = creator.name;
   el("sheetCreatorDesc").textContent = creator.description || "";
+  const usernameEl = el("sheetCreatorUsername");
+  if (creator.username) {
+    usernameEl.textContent = `@${creator.username}`;
+    usernameEl.hidden = false;
+    usernameEl.onclick = (e) => {
+      e.preventDefault();
+      tg.openTelegramLink(`https://t.me/${creator.username}`);
+    };
+  } else {
+    usernameEl.hidden = true;
+  }
   el("sheetCreatorAvatar").style.backgroundImage = `url('${creator.avatarUrl}')`;
   el("sheetBanner").style.backgroundImage = creator.bannerUrl ? `url('${creator.bannerUrl}')` : "none";
   el("sheetBanner").hidden = !creator.bannerUrl;
@@ -274,15 +316,56 @@ el("btnCrypto").addEventListener("click", async () => {
 
 el("btnTon").addEventListener("click", async () => {
   if (!selectedGift) return;
+
+  if (!tonConnectUI.connected) {
+    setSheetStatus("Сначала подключите кошелёк кнопкой ниже");
+    tonConnectUI.openModal();
+    return;
+  }
+
   setSheetStatus("Готовим перевод…");
   try {
-    const { link } = await api("/api/pay/ton", buildPayBody());
-    tg.openLink(link);
-    setSheetStatus("Подтвердите перевод в кошельке. Статус проверит продавец после получения.");
+    const { orderId, tonConnect } = await api("/api/pay/ton", buildPayBody());
+
+    await tonConnectUI.sendTransaction({
+      validUntil: Math.floor(Date.now() / 1000) + 300,
+      messages: [
+        {
+          address: tonConnect.address,
+          amount: tonConnect.amountNano,
+          payload: tonConnect.payloadBoc,
+        },
+      ],
+    });
+
+    setSheetStatus("Перевод отправлен, ждём подтверждения в сети…");
+    pollTonPayment(orderId);
   } catch (e) {
-    setSheetStatus("Ошибка: " + e.message, "error");
+    if (e && e.message && e.message.includes("Reject")) {
+      setSheetStatus("Перевод отменён в кошельке");
+    } else {
+      setSheetStatus("Ошибка: " + e.message, "error");
+    }
   }
 });
+
+async function pollTonPayment(orderId, attempt = 0) {
+  if (attempt >= 15) {
+    setSheetStatus("Пока не видим перевод в сети. Если деньги списались — продавец подтвердит вручную.");
+    return;
+  }
+  try {
+    const { paid } = await api("/api/pay/ton/check", { orderId });
+    if (paid) {
+      setSheetStatus("Оплата подтверждена ✅", "ok");
+      setTimeout(closeSheet, 1400);
+      return;
+    }
+  } catch (e) {
+    // тихо игнорируем отдельные неудачные проверки, попробуем ещё раз
+  }
+  setTimeout(() => pollTonPayment(orderId, attempt + 1), 4000);
+}
 
 loadProduct();
 loadCreators();
